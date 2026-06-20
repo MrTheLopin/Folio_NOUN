@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projet Bot de Trading Crypto — Backtesting</title>
+<style>
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+        background: #0f1117;
+        color: #e6e6e6;
+        margin: 0;
+        padding: 0;
+    }
+    header {
+        background: linear-gradient(135deg, #1a1d29, #2a1f3d);
+        padding: 50px 20px;
+        text-align: center;
+        border-bottom: 1px solid #333;
+    }
+    header h1 { margin: 0; font-size: 2em; }
+    header p { color: #aaa; max-width: 600px; margin: 15px auto 0; }
+    main { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+    .warning {
+        background: #2a1f1f;
+        border-left: 4px solid #e74c3c;
+        padding: 15px 20px;
+        margin-bottom: 30px;
+        border-radius: 4px;
+    }
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .card {
+        background: #1a1d29;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 20px;
+    }
+    .card h3 { margin-top: 0; color: #a78bfa; }
+    .card a { color: #60a5fa; text-decoration: none; }
+    .card a:hover { text-decoration: underline; }
+    img { max-width: 100%; border-radius: 8px; margin: 10px 0; border: 1px solid #333; }
+    footer { text-align: center; padding: 30px; color: #666; font-size: 0.9em; }
+    code { background: #1a1d29; padding: 2px 6px; border-radius: 4px; }
+    @media (max-width: 700px) { .cards { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+    <h1>🤖 Bot de Trading Crypto — Backtesting</h1>
+    <p>Projet d'apprentissage : stratégie de croisement de moyennes mobiles sur BTC/USDT,
+       testée historiquement (backtest) avant tout déploiement réel.</p>
+</header>
+
+<main>
+    <div class="warning">
+        ⚠️ <b>Ceci est un projet pédagogique.</b> Les performances passées (backtest) ne
+        garantissent aucunement des résultats futurs. Aucun contenu de cette page ne
+        constitue un conseil financier.
+    </div>
+
+    <div class="cards">
+        <div class="card">
+            <h3>📊 Détail des trades</h3>
+            <p>Tableau complet de chaque trade simulé, avec profit/perte coloré.</p>
+            <a href="trade_log.html">→ Voir le tableau</a>
+        </div>
+        <div class="card">
+            <h3>📂 Code source</h3>
+            <p>Tous les scripts Python du projet (fetch, stratégie, backtest, analyse).</p>
+            <a href="https://github.com/REMPLACE_PAR_TON_USERNAME/REMPLACE_PAR_TON_REPO">→ Voir sur GitHub</a>
+        </div>
+    </div>
+
+    <h2>Comment ça fonctionne</h2>
+    <p>
+        Le bot suit une stratégie de <b>croisement de moyennes mobiles</b> : il achète quand
+        une moyenne courte dépasse une moyenne longue (signal de tendance haussière), et vend
+        dans le cas inverse. Le projet inclut :
+    </p>
+    <ul>
+        <li><code>fetch_data.py</code> — récupération des données historiques (Binance)</li>
+        <li><code>strategy.py</code> — logique de signal, avec filtre de tendance optionnel</li>
+        <li><code>backtest.py</code> — simulation complète avec stop-loss / take-profit</li>
+        <li><code>grid_search.py</code> — test automatique de combinaisons de paramètres</li>
+        <li><code>multi_period_analysis.py</code> — robustesse sur plusieurs périodes de marché</li>
+    </ul>
+
+    <h2>Résultats du dernier backtest</h2>
+    <img src="backtest_results.png" alt="Résultats du backtest">
+</main>
+
+<footer>
+    Projet personnel — usage éducatif uniquement.
+</footer>
+
+</body>
+</html>

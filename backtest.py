@@ -15,31 +15,69 @@ import matplotlib.pyplot as plt
 from strategy import generate_signals
 
 
-def run_backtest(df, initial_capital=1000, short_window=20, long_window=50, fee_pct=0.001):
+def run_backtest(df, initial_capital=1000, short_window=20, long_window=50, fee_pct=0.001,
+                  stop_loss_pct=None, take_profit_pct=None, trend_filter_window=None):
     """
     Simule un portefeuille qui suit les signaux d'achat/vente.
 
-    initial_capital : capital de départ (fictif)
-    fee_pct         : frais de transaction par trade (0.001 = 0.1%, typique sur Binance)
+    initial_capital      : capital de départ (fictif)
+    fee_pct               : frais de transaction par trade (0.001 = 0.1%, typique sur Binance)
+    stop_loss_pct         : si défini (ex: 2.0), vend automatiquement si le prix chute de X%
+                             depuis le prix d'achat — même si le signal de moyenne mobile
+                             dit encore de rester acheteur. Limite les grosses pertes.
+    take_profit_pct       : si défini (ex: 4.0), vend automatiquement si le prix monte de
+                             X% depuis le prix d'achat — sécurise le gain avant un possible
+                             retournement, même si le signal dit encore de rester acheteur.
+    trend_filter_window   : si défini (ex: 200), n'autorise l'achat que si le prix est
+                             au-dessus de cette moyenne mobile longue (filtre de tendance).
+                             Voir strategy.py pour le détail.
     """
-    df = generate_signals(df, short_window, long_window)
+    df = generate_signals(df, short_window, long_window, trend_filter_window)
     df = df.dropna().reset_index(drop=True)  # enlève les lignes sans moyenne mobile calculée
 
     capital = initial_capital
     position = 0  # 0 = pas de BTC détenu, 1 = on détient du BTC
     btc_held = 0
+    entry_price = None
     portfolio_values = []
     trades = []
 
     for i, row in df.iterrows():
         price = row["close"]
 
+        # --- Vérification stop-loss / take-profit AVANT le signal de moyenne mobile ---
+        # (une fois en position, on regarde à chaque bougie si le prix a atteint
+        # un seuil de sortie automatique)
+        exit_reason = None
+        if position == 1 and entry_price is not None:
+            change_pct = (price / entry_price - 1) * 100
+            if stop_loss_pct is not None and change_pct <= -stop_loss_pct:
+                exit_reason = "STOP_LOSS"
+            elif take_profit_pct is not None and change_pct >= take_profit_pct:
+                exit_reason = "TAKE_PROFIT"
+
+        # Sortie automatique (stop-loss ou take-profit déclenché)
+        if exit_reason is not None:
+            capital_recupere = btc_held * price * (1 - fee_pct)
+            capital = capital_recupere
+            btc_held = 0
+            position = 0
+            entry_price = None
+            trades.append({
+                "date": row["timestamp"],
+                "type": "SELL",
+                "price": price,
+                "capital_recupere": capital_recupere,
+                "exit_reason": exit_reason,
+            })
+
         # Signal d'achat : on n'a pas de position et le signal dit d'acheter
-        if row["signal"] == 1 and position == 0:
+        elif row["signal"] == 1 and position == 0:
             capital_investi = capital  # montant englouti dans ce trade (avant frais)
             btc_held = (capital * (1 - fee_pct)) / price
             capital = 0
             position = 1
+            entry_price = price
             trades.append({
                 "date": row["timestamp"],
                 "type": "BUY",
@@ -47,17 +85,20 @@ def run_backtest(df, initial_capital=1000, short_window=20, long_window=50, fee_
                 "capital_investi": capital_investi,
             })
 
-        # Signal de vente : on a une position et le signal dit de sortir
+        # Signal de vente normal (croisement inverse) : on a une position et le
+        # signal dit de sortir
         elif row["signal"] == 0 and position == 1:
             capital_recupere = btc_held * price * (1 - fee_pct)  # montant récupéré (après frais)
             capital = capital_recupere
             btc_held = 0
             position = 0
+            entry_price = None
             trades.append({
                 "date": row["timestamp"],
                 "type": "SELL",
                 "price": price,
                 "capital_recupere": capital_recupere,
+                "exit_reason": "SIGNAL",
             })
 
         # Valeur totale du portefeuille à cet instant (cash + BTC détenu)
@@ -100,6 +141,7 @@ def build_trade_log(trades_df, initial_capital):
                 "profit_usdt": profit_usdt,
                 "profit_pct": profit_pct,
                 "gagnant": profit_usdt > 0,
+                "raison_sortie": row.get("exit_reason", "SIGNAL"),
             })
             buy_row = None
 
@@ -128,7 +170,7 @@ def print_trade_log(log_df, initial_capital, final_capital):
         print("Aucun trade complet (achat + vente) sur cette période.")
         return
 
-    header = f"{'#':>3} | {'Achat':^19} | {'Vente':^19} | {'Prix achat':>10} | {'Prix vente':>10} | {'Investi':>10} | {'Récupéré':>10} | {'Profit':>12}"
+    header = f"{'#':>3} | {'Achat':^19} | {'Vente':^19} | {'Prix achat':>10} | {'Prix vente':>10} | {'Investi':>10} | {'Récupéré':>10} | {'Profit':>12} | {'Raison':>11}"
     print(header)
     print("-" * len(header))
 
@@ -144,7 +186,8 @@ def print_trade_log(log_df, initial_capital, final_capital):
             f"{t['prix_vente']:>10.2f} | "
             f"{t['capital_investi']:>10.2f} | "
             f"{t['capital_recupere']:>10.2f} | "
-            f"{profit_str:>12}"
+            f"{profit_str:>12} | "
+            f"{t['raison_sortie']:>11}"
         )
         print(f"{color}{line}{RESET}")
 
@@ -175,16 +218,16 @@ def export_trade_log_image(log_df, initial_capital, final_capital, filename="tra
 
     columns_to_show = [
         "trade_num", "date_achat", "date_vente", "prix_achat", "prix_vente",
-        "capital_investi", "capital_recupere", "profit_usdt"
+        "capital_investi", "capital_recupere", "profit_usdt", "raison_sortie"
     ]
     column_labels = [
         "#", "Date achat", "Date vente", "Prix achat", "Prix vente",
-        "Investi (USDT)", "Récupéré (USDT)", "Profit"
+        "Investi (USDT)", "Récupéré (USDT)", "Profit", "Raison"
     ]
 
     # Ligne finale récapitulative (capital de départ -> capital final)
     final_row = ["", "", "CAPITAL FINAL", "", "", f"{initial_capital:.2f}", f"{final_capital:.2f}",
-                 f"{final_capital - initial_capital:+.2f} ({(final_capital/initial_capital - 1) * 100:+.2f}%)"]
+                 f"{final_capital - initial_capital:+.2f} ({(final_capital/initial_capital - 1) * 100:+.2f}%)", ""]
 
     nb_rows = len(display_df) + 1  # +1 pour la ligne finale
     fig_height = 0.9 + 0.35 * nb_rows
@@ -255,6 +298,7 @@ def export_trade_log_html(log_df, initial_capital, final_capital, filename="trad
             <td>{t['capital_investi']:.2f}</td>
             <td>{t['capital_recupere']:.2f}</td>
             <td>{t['profit_usdt']:+.2f} USDT ({t['profit_pct']:+.2f}%)</td>
+            <td>{t['raison_sortie']}</td>
         </tr>"""
 
     html_content = f"""<!DOCTYPE html>
@@ -288,7 +332,7 @@ def export_trade_log_html(log_df, initial_capital, final_capital, filename="trad
             <tr>
                 <th>#</th><th>Date achat</th><th>Date vente</th>
                 <th>Prix achat</th><th>Prix vente</th>
-                <th>Investi (USDT)</th><th>Récupéré (USDT)</th><th>Profit</th>
+                <th>Investi (USDT)</th><th>Récupéré (USDT)</th><th>Profit</th><th>Raison</th>
             </tr>
         </thead>
         <tbody>
@@ -298,6 +342,7 @@ def export_trade_log_html(log_df, initial_capital, final_capital, filename="trad
                 <td>{initial_capital:.2f}</td>
                 <td>{final_capital:.2f}</td>
                 <td>{total_profit:+.2f} USDT ({total_profit_pct:+.2f}%)</td>
+                <td></td>
             </tr>
         </tbody>
     </table>
@@ -310,12 +355,29 @@ def export_trade_log_html(log_df, initial_capital, final_capital, filename="trad
     print(f"Page HTML sauvegardée dans {filename}")
 
 
+def calculate_max_drawdown(df):
+    """
+    Calcule le drawdown maximum : la plus grosse chute en % entre un sommet
+    de la valeur du portefeuille et le creux qui a suivi.
+
+    C'est une métrique clé en trading : un rendement final positif peut
+    cacher une période où tu aurais perdu 30% de ton capital en cours de
+    route — information cruciale pour juger si une stratégie est "vivable"
+    psychologiquement et financièrement.
+    """
+    running_max = df["portfolio_value"].cummax()
+    drawdown_pct = (df["portfolio_value"] / running_max - 1) * 100
+    max_drawdown_pct = drawdown_pct.min()
+    return max_drawdown_pct
+
+
 def print_performance_summary(df, trades_df, initial_capital):
     final_value = df["portfolio_value"].iloc[-1]
     total_return_pct = (final_value / initial_capital - 1) * 100
 
     # Performance si on avait juste acheté et gardé (buy & hold), pour comparaison
     buy_hold_return_pct = (df["close"].iloc[-1] / df["close"].iloc[0] - 1) * 100
+    max_drawdown_pct = calculate_max_drawdown(df)
 
     print("=" * 50)
     print("RÉSUMÉ DE PERFORMANCE")
@@ -324,6 +386,7 @@ def print_performance_summary(df, trades_df, initial_capital):
     print(f"Capital final           : {final_value:.2f} USDT")
     print(f"Rendement stratégie     : {total_return_pct:+.2f}%")
     print(f"Rendement buy & hold     : {buy_hold_return_pct:+.2f}%")
+    print(f"Drawdown maximum         : {max_drawdown_pct:.2f}%")
     print(f"Nombre de trades         : {len(trades_df)}")
     print("=" * 50)
 
@@ -360,6 +423,15 @@ def plot_results(df, trades_df, initial_capital):
 if __name__ == "__main__":
     INITIAL_CAPITAL = 1000
 
+    # Stop-loss / take-profit : mets à None pour désactiver (comportement d'origine)
+    STOP_LOSS_PCT = 3.0     # vend automatiquement si le prix chute de 3% depuis l'achat
+    TAKE_PROFIT_PCT = 6.0   # vend automatiquement si le prix monte de 6% depuis l'achat
+
+    # Filtre de tendance : mets à None pour désactiver. Avec "200", on n'achète
+    # que si le prix est au-dessus de sa moyenne mobile 200 périodes (filtre
+    # classique pour éviter d'acheter en pleine tendance baissière de fond).
+    TREND_FILTER_WINDOW = 200
+
     # Charge les données récupérées par fetch_data.py
     df = pd.read_csv("btc_usdt_1h.csv", parse_dates=["timestamp"])
 
@@ -368,7 +440,10 @@ if __name__ == "__main__":
         initial_capital=INITIAL_CAPITAL,
         short_window=20,
         long_window=50,
-        fee_pct=0.001
+        fee_pct=0.001,
+        stop_loss_pct=STOP_LOSS_PCT,
+        take_profit_pct=TAKE_PROFIT_PCT,
+        trend_filter_window=TREND_FILTER_WINDOW
     )
 
     print_performance_summary(df, trades_df, INITIAL_CAPITAL)

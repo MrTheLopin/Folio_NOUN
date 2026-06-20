@@ -36,17 +36,35 @@ def fetch_ohlcv(symbol="BTC/USDT", timeframe="1h", limit=1000):
     return df
 
 
-def fetch_extended_history(symbol="BTC/USDT", timeframe="1h", total_candles=5000):
+def fetch_extended_history(symbol="BTC/USDT", timeframe="1h", total_candles=5000, max_retries=3):
     """
     Binance limite à ~1000 bougies par requête. Cette fonction fait plusieurs
     requêtes successives pour récupérer un historique plus long.
+
+    max_retries : nombre de tentatives en cas d'erreur réseau temporaire
+    avant d'abandonner (les APIs publiques peuvent parfois rejeter une
+    requête ponctuellement, ce n'est pas forcément grave).
     """
+    import time
+
     exchange = ccxt.binance()
     all_data = []
     since = None
 
     while len(all_data) < total_candles:
-        batch = exchange.fetch_ohlcv(symbol, timeframe=timeframe, since=since, limit=1000)
+        for attempt in range(max_retries):
+            try:
+                batch = exchange.fetch_ohlcv(symbol, timeframe=timeframe, since=since, limit=1000)
+                break
+            except (ccxt.NetworkError, ccxt.ExchangeError) as e:
+                if attempt < max_retries - 1:
+                    wait_time = 2 ** attempt  # attente progressive : 1s, 2s, 4s...
+                    print(f"  Erreur réseau ({e}), nouvelle tentative dans {wait_time}s...")
+                    time.sleep(wait_time)
+                else:
+                    print(f"  Échec après {max_retries} tentatives, arrêt avec {len(all_data)} bougies récupérées.")
+                    batch = []
+
         if not batch:
             break
         all_data += batch
@@ -54,6 +72,12 @@ def fetch_extended_history(symbol="BTC/USDT", timeframe="1h", total_candles=5000
         print(f"  {len(all_data)} bougies récupérées...")
         if len(batch) < 1000:
             break  # plus de données disponibles
+
+    if not all_data:
+        raise RuntimeError(
+            "Aucune donnée récupérée. Vérifie ta connexion internet et que "
+            "l'exchange (Binance) est accessible depuis ton réseau."
+        )
 
     df = pd.DataFrame(
         all_data,
