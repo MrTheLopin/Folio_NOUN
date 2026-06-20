@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Détail des trades</title>
+<style>
+    body { font-family: Arial, Helvetica, sans-serif; background: #f7f7f7; padding: 30px; }
+    h1 { font-size: 1.3em; }
+    table { border-collapse: collapse; width: 100%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    th, td { padding: 8px 12px; text-align: center; border-bottom: 1px solid #e0e0e0; font-size: 0.9em; }
+    th { background: #333; color: white; }
+    tr.gagnant { background-color: #d8f5d4; }
+    tr.perdant { background-color: #fbd6d6; }
+    tr.final { background-color: #cfcfcf; font-weight: bold; }
+    .summary { margin-bottom: 15px; }
+    .summary span.gagnant { color: #1a8c1a; font-weight: bold; }
+    .summary span.perdant { color: #c0392b; font-weight: bold; }
+</style>
+</head>
+<body>
+    <h1>Détail des trades — Stratégie de croisement de moyennes mobiles</h1>
+    <div class="summary">
+        <p>Capital de départ : <b>1000.00 USDT</b></p>
+        <p>Trades gagnants : <span class="gagnant">3</span> |
+           Trades perdants : <span class="perdant">4</span></p>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th><th>Date achat</th><th>Date vente</th>
+                <th>Prix achat</th><th>Prix vente</th>
+                <th>Investi (USDT)</th><th>Récupéré (USDT)</th><th>Profit</th>
+            </tr>
+        </thead>
+        <tbody>
+            
+        <tr class="perdant">
+            <td>1</td>
+            <td>2026-05-11 08:00</td>
+            <td>2026-05-12 14:00</td>
+            <td>80767.97</td>
+            <td>80540.00</td>
+            <td>1000.00</td>
+            <td>995.18</td>
+            <td>-4.82 USDT (-0.48%)</td>
+        </tr>
+        <tr class="perdant">
+            <td>2</td>
+            <td>2026-05-14 21:00</td>
+            <td>2026-05-15 20:00</td>
+            <td>81396.61</td>
+            <td>79123.12</td>
+            <td>995.18</td>
+            <td>965.45</td>
+            <td>-29.73 USDT (-2.99%)</td>
+        </tr>
+        <tr class="gagnant">
+            <td>3</td>
+            <td>2026-05-20 08:00</td>
+            <td>2026-05-22 03:00</td>
+            <td>77458.04</td>
+            <td>77779.98</td>
+            <td>965.45</td>
+            <td>967.53</td>
+            <td>+2.07 USDT (+0.21%)</td>
+        </tr>
+        <tr class="gagnant">
+            <td>4</td>
+            <td>2026-05-24 07:00</td>
+            <td>2026-05-26 11:00</td>
+            <td>76799.99</td>
+            <td>77183.55</td>
+            <td>967.53</td>
+            <td>970.42</td>
+            <td>+2.89 USDT (+0.30%)</td>
+        </tr>
+        <tr class="perdant">
+            <td>5</td>
+            <td>2026-05-29 23:00</td>
+            <td>2026-06-01 01:00</td>
+            <td>73460.78</td>
+            <td>73292.92</td>
+            <td>970.42</td>
+            <td>966.26</td>
+            <td>-4.15 USDT (-0.43%)</td>
+        </tr>
+        <tr class="perdant">
+            <td>6</td>
+            <td>2026-06-07 08:00</td>
+            <td>2026-06-09 15:00</td>
+            <td>62855.01</td>
+            <td>61131.84</td>
+            <td>966.26</td>
+            <td>937.90</td>
+            <td>-28.37 USDT (-2.94%)</td>
+        </tr>
+        <tr class="gagnant">
+            <td>7</td>
+            <td>2026-06-11 06:00</td>
+            <td>2026-06-16 22:00</td>
+            <td>62772.00</td>
+            <td>65780.00</td>
+            <td>937.90</td>
+            <td>980.87</td>
+            <td>+42.98 USDT (+4.58%)</td>
+        </tr>
+            <tr class="final">
+                <td colspan="5">CAPITAL FINAL</td>
+                <td>1000.00</td>
+                <td>980.87</td>
+                <td>-19.13 USDT (-1.91%)</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
