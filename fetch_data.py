@@ -12,7 +12,7 @@ import pandas as pd
 from datetime import datetime
 
 
-def fetch_ohlcv(symbol="BTC/USDT", timeframe="1h", limit=1000):
+def fetch_ohlcv(symbol="BTC/USDT", timeframe="15m", limit=1000):
     """
     Récupère les données OHLCV (Open, High, Low, Close, Volume).
 
@@ -36,7 +36,7 @@ def fetch_ohlcv(symbol="BTC/USDT", timeframe="1h", limit=1000):
     return df
 
 
-def fetch_extended_history(symbol="BTC/USDT", timeframe="1h", total_candles=5000, max_retries=3):
+def fetch_extended_history(symbol="BTC/USDT", timeframe="15m", total_candles=5000, max_retries=3):
     """
     Binance limite à ~1000 bougies par requête. Cette fonction fait plusieurs
     requêtes successives pour récupérer un historique plus long.
@@ -102,8 +102,8 @@ if __name__ == "__main__":
     # requêtes à l'API Binance).
     # =========================================================================
 
-    TIMEFRAME = "1h"
-    TOTAL_CANDLES = 3000
+    TIMEFRAME = "15m"
+    TOTAL_CANDLES = 8000
 
     df = fetch_extended_history(symbol="BTC/USDT", timeframe=TIMEFRAME, total_candles=TOTAL_CANDLES)
 
