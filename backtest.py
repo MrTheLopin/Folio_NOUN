@@ -420,6 +420,56 @@ def plot_results(df, trades_df, initial_capital):
     print("\nGraphique sauvegardé dans backtest_results.png")
 
 
+def log_to_journal(params, df, trades_df, initial_capital, filename="journal-data.json"):
+    """
+    Enregistre ce run dans un journal de bord (fichier JSON), pour garder une
+    trace de l'évolution de tes tests dans le temps. Chaque exécution de
+    backtest.py ajoute une nouvelle entrée — rien à faire manuellement.
+
+    Le fichier est lu par journal.html pour afficher l'historique sur le site.
+    """
+    import json
+    import os
+    from datetime import datetime
+
+    final_value = df["portfolio_value"].iloc[-1]
+    return_pct = (final_value / initial_capital - 1) * 100
+    buy_hold_pct = (df["close"].iloc[-1] / df["close"].iloc[0] - 1) * 100
+    max_dd = calculate_max_drawdown(df)
+
+    entry = {
+        "horodatage": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "periode_donnees": {
+            "debut": df["timestamp"].iloc[0].strftime("%Y-%m-%d"),
+            "fin": df["timestamp"].iloc[-1].strftime("%Y-%m-%d"),
+        },
+        "parametres": params,
+        "resultats": {
+            "capital_depart": initial_capital,
+            "capital_final": round(final_value, 2),
+            "rendement_pct": round(return_pct, 2),
+            "buy_hold_pct": round(buy_hold_pct, 2),
+            "drawdown_max_pct": round(max_dd, 2),
+            "nb_trades": len(trades_df),
+        },
+    }
+
+    history = []
+    if os.path.exists(filename):
+        try:
+            with open(filename, "r", encoding="utf-8") as f:
+                history = json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            history = []
+
+    history.append(entry)
+
+    with open(filename, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2, ensure_ascii=False)
+
+    print(f"Run ajouté au journal de bord ({filename}) — {len(history)} run(s) enregistré(s) au total.")
+
+
 if __name__ == "__main__":
     INITIAL_CAPITAL = 1000
 
@@ -454,3 +504,16 @@ if __name__ == "__main__":
     print_trade_log(trade_log_df, INITIAL_CAPITAL, final_capital)
     export_trade_log_image(trade_log_df, INITIAL_CAPITAL, final_capital)
     export_trade_log_html(trade_log_df, INITIAL_CAPITAL, final_capital)
+
+    log_to_journal(
+        params={
+            "short_window": 20,
+            "long_window": 50,
+            "stop_loss_pct": STOP_LOSS_PCT,
+            "take_profit_pct": TAKE_PROFIT_PCT,
+            "trend_filter_window": TREND_FILTER_WINDOW,
+        },
+        df=df,
+        trades_df=trades_df,
+        initial_capital=INITIAL_CAPITAL,
+    )

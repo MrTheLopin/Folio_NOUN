@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Journal de bord — Bot de trading BTC/USDT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0d12; --surface:#12161f; --surface-2:#191e29; --line:#262c38;
+  --text:#e8e6df; --muted:#8b8f9a; --amber:#d4a843; --teal:#3ea8a0; --red:#c25450;
+  --mono:'JetBrains Mono',monospace; --display:'Space Grotesk',sans-serif; --body:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.55;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:980px;margin:0 auto;padding:0 24px;}
+a{color:var(--teal);text-decoration:none;}
+a:hover{text-decoration:underline;}
+header.top{border-bottom:1px solid var(--line);padding:20px 0;}
+header.top .wrap{display:flex;justify-content:space-between;align-items:center;}
+.brand{font-family:var(--mono);font-size:.85rem;color:var(--muted);}
+.brand b{color:var(--amber);}
+main{padding:60px 0 90px;}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);}
+h1{font-family:var(--display);font-weight:600;font-size:2.1rem;letter-spacing:-.01em;margin-bottom:10px;}
+.sub{color:var(--muted);max-width:600px;margin-bottom:40px;}
+
+/* summary stat strip */
+.summary-strip{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:50px;background:var(--surface);}
+.summary-strip .s{padding:20px 22px;border-right:1px solid var(--line);}
+.summary-strip .s:last-child{border-right:none;}
+.summary-strip .s-label{font-family:var(--mono);font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;}
+.summary-strip .s-value{font-family:var(--mono);font-size:1.4rem;font-weight:600;}
+
+/* timeline */
+.timeline{position:relative;padding-left:28px;border-left:2px solid var(--line);}
+.run{position:relative;margin-bottom:34px;}
+.run::before{content:"";position:absolute;left:-34px;top:6px;width:11px;height:11px;border-radius:50%;background:var(--bg);border:2px solid var(--amber);}
+.run.pos::before{border-color:var(--teal);}
+.run.neg::before{border-color:var(--red);}
+.run-card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:20px 22px;}
+.run-head{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+.run-date{font-family:var(--mono);font-size:.8rem;color:var(--muted);}
+.run-return{font-family:var(--mono);font-size:1.3rem;font-weight:600;}
+.pos-text{color:var(--teal);} .neg-text{color:var(--red);}
+.run-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:14px;}
+.run-grid .g-label{font-family:var(--mono);font-size:.66rem;text-transform:uppercase;color:var(--muted);letter-spacing:.06em;}
+.run-grid .g-value{font-family:var(--mono);font-size:.95rem;margin-top:3px;}
+.params-row{display:flex;gap:8px;flex-wrap:wrap;}
+.param-chip{font-family:var(--mono);font-size:.72rem;background:var(--surface-2);border:1px solid var(--line);color:var(--muted);padding:4px 10px;border-radius:20px;}
+.param-chip b{color:var(--text);}
+
+.empty-state{text-align:center;padding:80px 20px;color:var(--muted);font-family:var(--mono);font-size:.9rem;border:1px dashed var(--line);border-radius:8px;}
+.empty-state code{color:var(--teal);background:var(--surface);padding:2px 7px;border-radius:3px;}
+
+footer{border-top:1px solid var(--line);padding:30px 0;text-align:center;color:var(--muted);font-family:var(--mono);font-size:.76rem;}
+
+@media (max-width:700px){
+  .summary-strip{grid-template-columns:repeat(2,1fr);}
+  .summary-strip .s:nth-child(2){border-right:none;}
+  .run-grid{grid-template-columns:repeat(2,1fr);}
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>Signal/Croisement</b> · bot de trading BTC/USDT</div>
+    <a href="index.html" style="font-family:var(--mono);font-size:.8rem;">← Retour à l'accueil</a>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="eyebrow">Journal de bord</div>
+    <h1>Historique de tous les backtests</h1>
+    <p class="sub">Chaque exécution de <code style="font-family:var(--mono);color:var(--teal);">backtest.py</code> ajoute automatiquement une entrée ici — aucune saisie manuelle. Sert à voir si les ajustements de paramètres dans le temps font progresser les résultats, ou non.</p>
+
+    <div class="summary-strip" id="summaryStrip"></div>
+
+    <div class="timeline" id="timeline"></div>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      Aucun run enregistré pour l'instant.<br><br>
+      Lance <code>python backtest.py</code> en local, puis pousse le fichier <code>journal-data.json</code> généré vers GitHub pour qu'il apparaisse ici.
+    </div>
+  </div>
+</main>
+
+<footer>Projet personnel — usage éducatif uniquement. Aucun conseil financier.</footer>
+
+<script>
+function fmtPct(v){ return (v>=0?'+':'')+v.toFixed(2)+'%'; }
+
+fetch('journal-data.json')
+  .then(r => { if(!r.ok) throw new Error('not found'); return r.json(); })
+  .then(renderJournal)
+  .catch(() => { document.getElementById('emptyState').style.display = 'block'; });
+
+function renderJournal(history){
+  if(!history || history.length === 0){
+    document.getElementById('emptyState').style.display = 'block';
+    return;
+  }
+  // plus récent en premier
+  const sorted = history.slice().reverse();
+
+  // ---- bandeau résumé ----
+  const totalRuns = history.length;
+  const bestRun = history.reduce((a,b)=> b.resultats.rendement_pct > a.resultats.rendement_pct ? b : a);
+  const avgReturn = history.reduce((s,r)=>s+r.resultats.rendement_pct,0) / totalRuns;
+  const lastRun = sorted[0];
+
+  document.getElementById('summaryStrip').innerHTML = `
+    <div class="s"><div class="s-label">Runs enregistrés</div><div class="s-value">${totalRuns}</div></div>
+    <div class="s"><div class="s-label">Meilleur rendement</div><div class="s-value ${bestRun.resultats.rendement_pct>=0?'pos-text':'neg-text'}">${fmtPct(bestRun.resultats.rendement_pct)}</div></div>
+    <div class="s"><div class="s-label">Rendement moyen</div><div class="s-value ${avgReturn>=0?'pos-text':'neg-text'}">${fmtPct(avgReturn)}</div></div>
+    <div class="s"><div class="s-label">Dernier run</div><div class="s-value" style="font-size:.95rem;">${lastRun.horodatage}</div></div>
+  `;
+
+  // ---- timeline ----
+  const tl = document.getElementById('timeline');
+  tl.innerHTML = sorted.map(run => {
+    const r = run.resultats;
+    const p = run.parametres;
+    const isPos = r.rendement_pct >= 0;
+    return `
+    <div class="run ${isPos?'pos':'neg'}">
+      <div class="run-card">
+        <div class="run-head">
+          <div class="run-date">${run.horodatage} · données du ${run.periode_donnees.debut} au ${run.periode_donnees.fin}</div>
+          <div class="run-return ${isPos?'pos-text':'neg-text'}">${fmtPct(r.rendement_pct)}</div>
+        </div>
+        <div class="run-grid">
+          <div><div class="g-label">Capital final</div><div class="g-value">${r.capital_final.toFixed(2)} USDT</div></div>
+          <div><div class="g-label">Buy &amp; hold</div><div class="g-value ${r.buy_hold_pct>=0?'pos-text':'neg-text'}">${fmtPct(r.buy_hold_pct)}</div></div>
+          <div><div class="g-label">Drawdown max</div><div class="g-value neg-text">${r.drawdown_max_pct.toFixed(2)}%</div></div>
+          <div><div class="g-label">Trades</div><div class="g-value">${r.nb_trades}</div></div>
+        </div>
+        <div class="params-row">
+          <span class="param-chip">MA <b>${p.short_window}/${p.long_window}</b></span>
+          <span class="param-chip">Stop-loss <b>${p.stop_loss_pct ?? '—'}</b></span>
+          <span class="param-chip">Take-profit <b>${p.take_profit_pct ?? '—'}</b></span>
+          <span class="param-chip">Filtre tendance <b>${p.trend_filter_window ?? 'off'}</b></span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+</script>
+
+</body>
+</html>
