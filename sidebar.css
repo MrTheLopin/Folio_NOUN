@@ -1,0 +1,64 @@
+/* ===========================================================
+   sidebar.css — navigation latérale partagée entre les pages
+   À inclure sur toute page qui doit afficher la barre latérale.
+=========================================================== */
+:root{
+  --bg:#0a0d12; --surface:#12161f; --surface-2:#191e29; --line:#262c38;
+  --text:#e8e6df; --muted:#8b8f9a; --amber:#d4a843; --teal:#3ea8a0; --red:#c25450;
+  --mono:'JetBrains Mono',monospace; --display:'Space Grotesk',sans-serif; --body:'Inter',sans-serif;
+}
+
+body{ padding-left:230px; }
+
+#siteSidebar{
+  position:fixed; top:0; left:0; bottom:0; width:230px;
+  background:var(--surface); border-right:1px solid var(--line);
+  display:flex; flex-direction:column; z-index:50; overflow-y:auto;
+}
+#siteSidebar .sb-brand{
+  font-family:var(--mono); font-size:.78rem; color:var(--muted);
+  padding:22px 22px 18px; border-bottom:1px solid var(--line);
+}
+#siteSidebar .sb-brand b{ color:var(--amber); display:block; font-size:.85rem; margin-bottom:2px; }
+
+#siteSidebar nav{ padding:14px 12px; display:flex; flex-direction:column; gap:3px; flex:1; }
+#siteSidebar a{
+  display:flex; align-items:center; gap:10px;
+  font-family:var(--mono); font-size:.82rem; color:var(--muted);
+  text-decoration:none; padding:10px 12px; border-radius:6px;
+  transition:.15s;
+}
+#siteSidebar a:hover{ background:var(--surface-2); color:var(--text); }
+#siteSidebar a.active{ background:rgba(212,168,67,.12); color:var(--amber); font-weight:600; }
+#siteSidebar a.active .sb-dot{ background:var(--amber); box-shadow:0 0 6px var(--amber); }
+#siteSidebar a .sb-dot{ width:5px; height:5px; border-radius:50%; background:var(--muted); flex-shrink:0; }
+
+/* Journal de bord mis en avant : plus grand, au milieu de la liste */
+#siteSidebar a.sb-featured{
+  font-size:1.0rem; font-weight:700; color:var(--teal); padding:16px 12px;
+  border:1px solid var(--line); margin:6px 0;
+}
+#siteSidebar a.sb-featured:hover{ border-color:var(--teal); background:rgba(62,168,160,.1); }
+#siteSidebar a.sb-featured.active{ background:rgba(62,168,160,.14); color:var(--teal); border-color:var(--teal); }
+#siteSidebar a.sb-featured.active .sb-dot{ background:var(--teal); box-shadow:0 0 6px var(--teal); }
+
+#siteSidebar .sb-footer{
+  padding:16px 22px; border-top:1px solid var(--line);
+  font-family:var(--mono); font-size:.68rem; color:var(--muted);
+}
+
+/* Mobile : la sidebar devient une barre horizontale en haut */
+@media (max-width:880px){
+  body{ padding-left:0; padding-top:64px; }
+  #siteSidebar{
+    position:fixed; top:0; left:0; right:0; bottom:auto; width:100%; height:auto;
+    flex-direction:row; align-items:center; border-right:none; border-bottom:1px solid var(--line);
+    overflow-x:auto; overflow-y:visible;
+  }
+  #siteSidebar .sb-brand{ border-bottom:none; border-right:1px solid var(--line); padding:14px 16px; white-space:nowrap; }
+  #siteSidebar .sb-brand b{ display:inline; }
+  #siteSidebar nav{ flex-direction:row; padding:8px; overflow-x:auto; }
+  #siteSidebar a{ white-space:nowrap; }
+  #siteSidebar a.sb-featured{ margin:0 4px; }
+  #siteSidebar .sb-footer{ display:none; }
+}

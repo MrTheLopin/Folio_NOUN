@@ -1,0 +1,18 @@
+# Environnement virtuel Python
+venv/
+__pycache__/
+*.pyc
+
+# Données téléchargées (volumineuses, régénérables via fetch_data.py)
+btc_usdt_*.csv
+*.csv
+
+# Fichiers générés par les scripts (à régénérer en local)
+grid_search_heatmap.png
+paper_trades_log.json
+
+# Garde ces fichiers pour la page web (commente les lignes ci-dessous
+# si tu veux les exclure du repo) :
+# backtest_results.png
+# trade_log.png
+# trade_log.html

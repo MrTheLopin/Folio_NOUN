@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commandes — Bot de trading BTC/USDT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="sidebar.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.55;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:760px;margin:0 auto;padding:60px 24px 90px;}
+.eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);}
+h1{font-family:var(--display);font-weight:600;font-size:2.1rem;letter-spacing:-.01em;margin-bottom:10px;}
+.sub{color:var(--muted);max-width:600px;margin-bottom:40px;}
+.cmd-list{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--surface);}
+.cmd-step{display:flex;gap:18px;padding:22px 24px;border-bottom:1px solid var(--line);}
+.cmd-step:last-child{border-bottom:none;}
+.cmd-n{font-family:var(--mono);color:var(--amber);font-size:.85rem;width:26px;flex-shrink:0;padding-top:2px;}
+.cmd-body h4{font-size:.97rem;margin-bottom:6px;font-weight:600;}
+.cmd-body p{color:var(--muted);font-size:.87rem;margin-bottom:10px;}
+.cmd-code{font-family:var(--mono);font-size:.82rem;background:#05070a;border:1px solid var(--line);border-radius:5px;padding:12px 16px;color:var(--teal);overflow-x:auto;white-space:pre;}
+.cmd-tag{display:inline-block;font-family:var(--mono);font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--bg);background:var(--amber);padding:2px 8px;border-radius:3px;margin-bottom:8px;}
+.cmd-tag.once{background:var(--muted);}
+.cmd-tag.repeat{background:var(--teal);}
+footer{border-top:1px solid var(--line);padding:30px 0;text-align:center;color:var(--muted);font-family:var(--mono);font-size:.76rem;}
+</style>
+</head>
+<body>
+
+<main class="wrap">
+  <div class="eyebrow">Référence</div>
+  <h1>Toutes les commandes, dans l'ordre</h1>
+  <p class="sub">Les commandes à connaître pour faire vivre le projet, du premier lancement jusqu'au paper trading.</p>
+
+  <div class="cmd-list" id="commandsBody"></div>
+</main>
+
+<footer>Projet personnel — usage éducatif uniquement. Aucun conseil financier.</footer>
+
+<script src="sidebar.js"></script>
+<script>
+const COMMANDS = [
+  { tag:"once", title:"1. Installer l'environnement", desc:"Crée un environnement Python isolé pour ce projet (une seule fois).",
+    code:"cd ~/Documents/Projet_Folio_Trading_NOUN\npython3 -m venv venv\nsource venv/bin/activate\npip install -r requirements.txt" },
+  { tag:"repeat", title:"2. Réactiver l'environnement", desc:"À refaire à chaque nouvelle session de terminal, avant toute commande Python du projet.",
+    code:"cd ~/Documents/Projet_Folio_Trading_NOUN\nsource venv/bin/activate" },
+  { tag:"repeat", title:"3. Télécharger les données historiques", desc:"Récupère l'historique de prix BTC/USDT depuis Binance. À refaire si tu veux des données plus récentes ou une granularité différente.",
+    code:"python fetch_data.py" },
+  { tag:"repeat", title:"4. Lancer le backtest", desc:"Simule la stratégie sur les données téléchargées. Génère les graphiques, le tableau de trades, et enregistre automatiquement le run dans le journal de bord.",
+    code:"python backtest.py" },
+  { tag:"once", title:"5. Tester plein de paramètres (optionnel)", desc:"Teste automatiquement des dizaines de combinaisons de moyennes mobiles et affiche une heatmap.",
+    code:"python grid_search.py" },
+  { tag:"once", title:"6. Vérifier la robustesse (optionnel)", desc:"Découpe l'historique en tranches pour voir si la stratégie tient sur plusieurs régimes de marché.",
+    code:"python multi_period_analysis.py" },
+  { tag:"once", title:"7. Créer tes clés API testnet", desc:"Sur testnet.binance.vision, connecte-toi avec GitHub et génère une clé API + secret (gratuit, sans CB).",
+    code:"# Pas de commande — se fait sur https://testnet.binance.vision/" },
+  { tag:"repeat", title:"8. Configurer les clés testnet", desc:"À refaire à chaque nouvelle session de terminal (les variables d'environnement ne sont pas permanentes par défaut).",
+    code:"export BINANCE_TESTNET_API_KEY=\"ta_clé\"\nexport BINANCE_TESTNET_API_SECRET=\"ton_secret\"" },
+  { tag:"repeat", title:"9. Tester le paper trading une fois", desc:"Vérifie qu'une décision et un éventuel ordre passent bien, avant de lancer la boucle continue.",
+    code:"python paper_trading.py --once" },
+  { tag:"repeat", title:"10. Lancer le paper trading en continu", desc:"Tourne en boucle dans un terminal dédié — laisse-le ouvert. Ctrl+C pour arrêter.",
+    code:"python paper_trading.py" },
+  { tag:"repeat", title:"11. Pousser les mises à jour sur GitHub", desc:"Envoie tes derniers résultats (journal, graphiques) sur ton site GitHub Pages.",
+    code:"git add .\ngit commit -m \"Nouveau run\"\ngit push" },
+];
+
+document.getElementById('commandsBody').innerHTML = COMMANDS.map(c => `
+  <div class="cmd-step">
+    <div class="cmd-n">${c.title.split('.')[0]}</div>
+    <div class="cmd-body">
+      <span class="cmd-tag ${c.tag}">${c.tag === 'once' ? 'occasionnel' : 'à chaque fois'}</span>
+      <h4>${c.title.split('. ')[1]}</h4>
+      <p>${c.desc}</p>
+      <div class="cmd-code">${c.code}</div>
+    </div>
+  </div>`).join('');
+</script>
+
+</body>
+</html>

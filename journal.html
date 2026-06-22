@@ -6,21 +6,13 @@
 <title>Journal de bord — Bot de trading BTC/USDT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="sidebar.css">
 <style>
-:root{
-  --bg:#0a0d12; --surface:#12161f; --surface-2:#191e29; --line:#262c38;
-  --text:#e8e6df; --muted:#8b8f9a; --amber:#d4a843; --teal:#3ea8a0; --red:#c25450;
-  --mono:'JetBrains Mono',monospace; --display:'Space Grotesk',sans-serif; --body:'Inter',sans-serif;
-}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.55;-webkit-font-smoothing:antialiased;}
 .wrap{max-width:980px;margin:0 auto;padding:0 24px;}
 a{color:var(--teal);text-decoration:none;}
 a:hover{text-decoration:underline;}
-header.top{border-bottom:1px solid var(--line);padding:20px 0;}
-header.top .wrap{display:flex;justify-content:space-between;align-items:center;}
-.brand{font-family:var(--mono);font-size:.85rem;color:var(--muted);}
-.brand b{color:var(--amber);}
 main{padding:60px 0 90px;}
 .eyebrow{font-family:var(--mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:14px;display:flex;align-items:center;gap:10px;}
 .eyebrow::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);}
@@ -65,13 +57,6 @@ footer{border-top:1px solid var(--line);padding:30px 0;text-align:center;color:v
 </style>
 </head>
 <body>
-
-<header class="top">
-  <div class="wrap">
-    <div class="brand"><b>Signal/Croisement</b> · bot de trading BTC/USDT</div>
-    <a href="index.html" style="font-family:var(--mono);font-size:.8rem;">← Retour à l'accueil</a>
-  </div>
-</header>
 
 <main>
   <div class="wrap">
@@ -150,6 +135,7 @@ function renderJournal(history){
   }).join('');
 }
 </script>
+<script src="sidebar.js"></script>
 
 </body>
 </html>

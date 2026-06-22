@@ -16,7 +16,8 @@ from strategy import generate_signals
 
 
 def run_backtest(df, initial_capital=1000, short_window=20, long_window=50, fee_pct=0.001,
-                  stop_loss_pct=None, take_profit_pct=None, trend_filter_window=None):
+                  stop_loss_pct=None, take_profit_pct=None, trend_filter_window=None,
+                  target_trades_per_week=None, fast_short_window=5, fast_long_window=15):
     """
     Simule un portefeuille qui suit les signaux d'achat/vente.
 
@@ -31,8 +32,29 @@ def run_backtest(df, initial_capital=1000, short_window=20, long_window=50, fee_
     trend_filter_window   : si défini (ex: 200), n'autorise l'achat que si le prix est
                              au-dessus de cette moyenne mobile longue (filtre de tendance).
                              Voir strategy.py pour le détail.
+    target_trades_per_week : si défini (ex: 12), la stratégie surveille son rythme de trading
+                             sur les 7 derniers jours. Si elle est en retard sur ce quota, elle
+                             active un second jeu de moyennes mobiles, plus rapide
+                             (fast_short_window/fast_long_window), pour générer plus
+                             d'opportunités d'entrée.
+                             ⚠️ Forcer un nombre de trades indépendamment du signal de marché
+                             augmente les frais payés et peut faire entrer le bot sur des
+                             trades sans avantage statistique réel. Cette option sert à
+                             OBSERVER cet effet (notamment sur testnet), pas à l'optimiser.
     """
     df = generate_signals(df, short_window, long_window, trend_filter_window)
+
+    # Signal "de secours" plus réactif, utilisé uniquement quand on est en
+    # retard sur le quota de trades hebdomadaire visé.
+    if target_trades_per_week is not None:
+        df["fast_ma_short"] = df["close"].rolling(window=fast_short_window).mean()
+        df["fast_ma_long"] = df["close"].rolling(window=fast_long_window).mean()
+        df["fast_signal"] = (df["fast_ma_short"] > df["fast_ma_long"]).astype(int)
+        # Le filtre de tendance, si actif, s'applique aussi au signal de secours
+        # (on ne veut pas qu'il contourne complètement le garde-fou de tendance)
+        if trend_filter_window is not None:
+            df.loc[df["close"] < df["ma_trend"], "fast_signal"] = 0
+
     df = df.dropna().reset_index(drop=True)  # enlève les lignes sans moyenne mobile calculée
 
     capital = initial_capital
@@ -41,9 +63,20 @@ def run_backtest(df, initial_capital=1000, short_window=20, long_window=50, fee_
     entry_price = None
     portfolio_values = []
     trades = []
+    buy_timestamps = []  # historique des achats, pour calculer le rythme hebdomadaire
 
     for i, row in df.iterrows():
         price = row["close"]
+
+        # --- Détermine si on est en retard sur le quota de trades hebdomadaire ---
+        effective_signal = row["signal"]
+        force_mode = False
+        if target_trades_per_week is not None:
+            seven_days_ago = row["timestamp"] - pd.Timedelta(days=7)
+            trades_last_7d = sum(1 for t in buy_timestamps if t >= seven_days_ago)
+            if trades_last_7d < target_trades_per_week:
+                force_mode = True
+                effective_signal = 1 if (row["signal"] == 1 or row["fast_signal"] == 1) else 0
 
         # --- Vérification stop-loss / take-profit AVANT le signal de moyenne mobile ---
         # (une fois en position, on regarde à chaque bougie si le prix a atteint
@@ -71,23 +104,26 @@ def run_backtest(df, initial_capital=1000, short_window=20, long_window=50, fee_
                 "exit_reason": exit_reason,
             })
 
-        # Signal d'achat : on n'a pas de position et le signal dit d'acheter
-        elif row["signal"] == 1 and position == 0:
+        # Signal d'achat : on n'a pas de position et le signal (normal ou de
+        # secours) dit d'acheter
+        elif effective_signal == 1 and position == 0:
             capital_investi = capital  # montant englouti dans ce trade (avant frais)
             btc_held = (capital * (1 - fee_pct)) / price
             capital = 0
             position = 1
             entry_price = price
+            buy_timestamps.append(row["timestamp"])
             trades.append({
                 "date": row["timestamp"],
                 "type": "BUY",
                 "price": price,
                 "capital_investi": capital_investi,
+                "exit_reason": "FORCÉ (quota)" if force_mode else None,
             })
 
         # Signal de vente normal (croisement inverse) : on a une position et le
         # signal dit de sortir
-        elif row["signal"] == 0 and position == 1:
+        elif effective_signal == 0 and position == 1:
             capital_recupere = btc_held * price * (1 - fee_pct)  # montant récupéré (après frais)
             capital = capital_recupere
             btc_held = 0
@@ -305,25 +341,30 @@ def export_trade_log_html(log_df, initial_capital, final_capital, filename="trad
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Détail des trades</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Détail des trades — Bot de trading BTC/USDT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="sidebar.css">
 <style>
-    body {{ font-family: Arial, Helvetica, sans-serif; background: #f7f7f7; padding: 30px; }}
-    h1 {{ font-size: 1.3em; }}
-    table {{ border-collapse: collapse; width: 100%; background: white; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }}
-    th, td {{ padding: 8px 12px; text-align: center; border-bottom: 1px solid #e0e0e0; font-size: 0.9em; }}
-    th {{ background: #333; color: white; }}
-    tr.gagnant {{ background-color: #d8f5d4; }}
-    tr.perdant {{ background-color: #fbd6d6; }}
-    tr.final {{ background-color: #cfcfcf; font-weight: bold; }}
-    .summary {{ margin-bottom: 15px; }}
-    .summary span.gagnant {{ color: #1a8c1a; font-weight: bold; }}
-    .summary span.perdant {{ color: #c0392b; font-weight: bold; }}
+    *{{box-sizing:border-box;margin:0;padding:0;}}
+    body {{ font-family: var(--body); background: var(--bg); color: var(--text); padding: 60px 40px 90px; -webkit-font-smoothing:antialiased; }}
+    h1 {{ font-family: var(--display); font-size: 1.5em; margin-bottom: 18px; }}
+    table {{ border-collapse: collapse; width: 100%; background: var(--surface); border:1px solid var(--line); border-radius:8px; overflow:hidden; font-family: var(--mono); }}
+    th, td {{ padding: 10px 14px; text-align: center; border-bottom: 1px solid var(--line); font-size: 0.82em; }}
+    th {{ background: var(--surface-2); color: var(--muted); text-transform:uppercase; letter-spacing:.04em; font-size:.7em; }}
+    tr.gagnant {{ background-color: rgba(62,168,160,0.12); }}
+    tr.perdant {{ background-color: rgba(194,84,80,0.12); }}
+    tr.final {{ background-color: var(--surface-2); font-weight: bold; }}
+    .summary {{ margin-bottom: 20px; font-family: var(--mono); font-size: .88em; color: var(--muted); }}
+    .summary span.gagnant {{ color: var(--teal); font-weight: bold; }}
+    .summary span.perdant {{ color: var(--red); font-weight: bold; }}
 </style>
 </head>
 <body>
     <h1>Détail des trades — Stratégie de croisement de moyennes mobiles</h1>
     <div class="summary">
-        <p>Capital de départ : <b>{initial_capital:.2f} USDT</b></p>
+        <p>Capital de départ : <b style="color:var(--text);">{initial_capital:.2f} USDT</b></p>
         <p>Trades gagnants : <span class="gagnant">{nb_gagnants}</span> |
            Trades perdants : <span class="perdant">{nb_perdants}</span></p>
     </div>
@@ -346,6 +387,7 @@ def export_trade_log_html(log_df, initial_capital, final_capital, filename="trad
             </tr>
         </tbody>
     </table>
+<script src="sidebar.js"></script>
 </body>
 </html>"""
 
@@ -482,6 +524,12 @@ if __name__ == "__main__":
     # classique pour éviter d'acheter en pleine tendance baissière de fond).
     TREND_FILTER_WINDOW = 200
 
+    # Quota de trades hebdomadaire visé : mets à None pour désactiver (la
+    # stratégie ne trade alors que sur son signal normal, sans contrainte de
+    # fréquence). Avec une valeur (ex: 12), active un signal de secours plus
+    # réactif dès que le rythme des 7 derniers jours est en retard sur ce quota.
+    TARGET_TRADES_PER_WEEK = 12
+
     # Charge les données récupérées par fetch_data.py
     df = pd.read_csv("btc_usdt_1h.csv", parse_dates=["timestamp"])
 
@@ -493,7 +541,8 @@ if __name__ == "__main__":
         fee_pct=0.001,
         stop_loss_pct=STOP_LOSS_PCT,
         take_profit_pct=TAKE_PROFIT_PCT,
-        trend_filter_window=TREND_FILTER_WINDOW
+        trend_filter_window=TREND_FILTER_WINDOW,
+        target_trades_per_week=TARGET_TRADES_PER_WEEK
     )
 
     print_performance_summary(df, trades_df, INITIAL_CAPITAL)
@@ -512,6 +561,7 @@ if __name__ == "__main__":
             "stop_loss_pct": STOP_LOSS_PCT,
             "take_profit_pct": TAKE_PROFIT_PCT,
             "trend_filter_window": TREND_FILTER_WINDOW,
+            "target_trades_per_week": TARGET_TRADES_PER_WEEK,
         },
         df=df,
         trades_df=trades_df,

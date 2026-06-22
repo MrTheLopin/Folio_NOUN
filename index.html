@@ -6,6 +6,7 @@
 <title>Signal/Croisement — Bot de trading BTC/USDT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="sidebar.css">
 <style>
 :root{
   --bg:#0a0d12;
@@ -67,6 +68,7 @@ h2{font-size:2rem;margin-bottom:10px;}
   font-family:var(--mono);font-size:.85rem;letter-spacing:.02em;
   padding:13px 22px;border-radius:3px;border:1px solid var(--line);
   text-decoration:none;color:var(--text);transition:.15s;display:inline-block;
+  background:transparent;appearance:none;-webkit-appearance:none;cursor:pointer;
 }
 .btn-primary{background:var(--amber);color:#15110a;border-color:var(--amber);font-weight:600;}
 .btn-primary:hover{background:#e6bc5c;}
@@ -155,6 +157,27 @@ input[type=range]{width:100%;accent-color:var(--amber);}
 
 footer{border-top:1px solid var(--line);padding:40px 0;text-align:center;color:var(--muted);font-family:var(--mono);font-size:.78rem;}
 
+/* ---------- SIDEBAR NAVIGATION ---------- */
+.sidebar{position:fixed;top:0;left:0;width:212px;height:100vh;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:24px 0;z-index:50;}
+.sb-brand{font-family:var(--mono);font-size:.82rem;font-weight:600;padding:0 22px 22px;border-bottom:1px solid var(--line);margin-bottom:14px;display:flex;align-items:center;gap:8px;color:var(--text);}
+.sb-dot{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 8px var(--amber);flex-shrink:0;}
+.sb-links{display:flex;flex-direction:column;gap:2px;padding:0 12px;flex:1;}
+.sb-links a{font-family:var(--mono);font-size:.82rem;color:var(--muted);text-decoration:none;padding:10px 14px;border-radius:6px;transition:.15s;}
+.sb-links a:hover{background:var(--surface-2);color:var(--text);}
+.sb-links a.active{background:rgba(212,168,67,.12);color:var(--amber);font-weight:600;}
+.sb-links a.sb-main{color:var(--teal);}
+.sb-links a.sb-main.active{background:rgba(62,168,160,.14);color:var(--teal);}
+.sb-foot{font-family:var(--mono);font-size:.66rem;color:var(--muted);padding:14px 22px 0;border-top:1px solid var(--line);margin-top:14px;line-height:1.5;}
+.page-with-sidebar{margin-left:212px;}
+@media (max-width:880px){
+  .sidebar{position:relative;width:100%;height:auto;flex-direction:row;overflow-x:auto;padding:14px 16px;border-right:none;border-bottom:1px solid var(--line);}
+  .sb-brand{display:none;}
+  .sb-links{flex-direction:row;padding:0;gap:6px;}
+  .sb-links a{white-space:nowrap;}
+  .sb-foot{display:none;}
+  .page-with-sidebar{margin-left:0;}
+}
+
 @media (max-width:880px){
   .hero-grid{grid-template-columns:1fr;}
   .sandbox-body{grid-template-columns:1fr;}
@@ -177,7 +200,8 @@ footer{border-top:1px solid var(--line);padding:40px 0;text-align:center;color:v
       <p class="lede">Un bot de trading BTC/USDT construit pour apprendre : croisement de moyennes mobiles, stop-loss, filtre de tendance — tout testé sur des données historiques avant la moindre idée de capital réel.</p>
       <div class="btn-row">
         <a href="#sandbox" class="btn btn-primary">Tester la stratégie en direct →</a>
-        <a href="https://github.com/MrTheLopin/Folio_NOUN" class="btn btn-ghost">Voir le code</a>
+        <a href="https://github.com/REMPLACE_PAR_TON_USERNAME/REMPLACE_PAR_TON_REPO" class="btn btn-ghost">Voir le code</a>
+        <a href="commandes.html" class="btn btn-ghost">📋 Toutes les commandes</a>
       </div>
     </div>
     <div class="hero-chart-card">
@@ -319,7 +343,7 @@ footer{border-top:1px solid var(--line);padding:40px 0;text-align:center;color:v
       <div class="card">
         <h3>🗂 Code source complet</h3>
         <p>Les 5 scripts Python, commentés, avec leurs garde-fous (overfitting, frais, etc).</p>
-        <a href="https://github.com/MrTheLopin/Folio_NOUN">→ Voir sur GitHub</a>
+        <a href="https://github.com/REMPLACE_PAR_TON_USERNAME/REMPLACE_PAR_TON_REPO">→ Voir sur GitHub</a>
       </div>
       <div class="card">
         <h3>📈 Dernier graphique</h3>
@@ -619,6 +643,7 @@ update();
   frame();
 })();
 </script>
+<script src="sidebar.js"></script>
 
 </body>
 </html>
